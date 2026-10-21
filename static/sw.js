@@ -1,5 +1,5 @@
 // static/sw.js — cache shell biar sesi terakhir tetap kebuka offline
-const SHELL = "vo2max-v1";
+const SHELL = "vo2max-v2";
 const ASSETS = ["/", "/app.js", "/manifest.webmanifest"];
 
 self.addEventListener("install", (e) => {
