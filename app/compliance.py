@@ -27,12 +27,12 @@ def time_in_zone(hr, tm, lo, hi) -> float:
 
 def classify(work_s: int, in_zone_s: float, above_hi_s: float) -> str:
     if work_s <= 0:
-        return "ok" if in_zone_s > 0 else "Not Yet"
+        return "ok" if in_zone_s > 0 else "belum"
     if above_hi_s > 300:          # > 5 menit di atas zona = kebanyakan
-        return "Overtrain"
+        return "kelebihan"
     if in_zone_s >= 0.7 * work_s:  # minimal 70% durasi kerja di zona
         return "ok"
-    return "Undertrain"
+    return "kurang_keras"
 
 def _activity_for(con, session_date: str):
     """Run pada tanggal sesi (WIB = UTC+7), ambil yang paling awal."""

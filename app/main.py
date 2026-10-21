@@ -39,7 +39,7 @@ def athlete(con) -> dict:
 
 def require_login(request: Request) -> bool:
 	try:
-		signer.loads(request.cookies.get(COOKIE), max_age=90*24*3600)
+		signer.loads(request.cookies.get(COOKIE, ""), max_age=90*24*3600)
 	except BadSignature:
 		raise HTTPException(status_code=401, detail="Please login first")
 	return True
@@ -61,8 +61,8 @@ def state(_: bool = Depends(require_login)):
 	zones = metrics.hr_zones(a["hr_max"])
 	paces = {z: metrics.target_pace(z, vd) for z in ("z2", "z4", "z5")} if vd else {}
 	if vd:
-		generator.ensure_session(
-			con, date.fromisoformat(a["start_date"]), vd, a["hr_max"]
+		generator.ensure_sessions(
+			con, date.fromisoformat(a["start_date"]), vd, a["hr_max"], paces
 		)
 	session = generator.this_week_session(con, a["start_date"])
 	recent = [
@@ -89,7 +89,7 @@ async def upload(file: UploadFile = File(...), _:bool = Depends(require_login)):
 		tmp.write(await file.read())
 		path = tmp.name
 	try:
-		return ingest.ingest_file(path) | {"filename": file.filename}
+		return ingest.ingest_file(path, external_id=Path(file.filename or "upload").stem) | {"filename": file.filename}
 	finally:
 		os.unlink(path)
 

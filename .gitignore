@@ -1,5 +1,8 @@
 /.env
-/db/vo2max.db
 /.venv/
-/data
-/.idea
+/.idea/
+/db/
+/data/
+__pycache__/
+*.pyc
+*.log
