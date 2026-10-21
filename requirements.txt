@@ -3,4 +3,4 @@ uvicorn[standard]==0.34.0
 itsdangerous==2.2.0
 python-dotenv==1.0.1
 python-multipart==0.0.20      # upload file dari PWA
-# fitparse==0.2.0             # opsional, kalau mau import .FIT
+fitparse==0.2.0               # import file .FIT (wajib untuk export FIT)
