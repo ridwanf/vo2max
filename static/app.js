@@ -58,6 +58,7 @@ $("file").onchange = async (e) => {
   const fd = new FormData();
   fd.append("file", f);
   const r = await api("/api/upload", { method: "POST", body: fd });
+  if (r.error) { alert(`Gagal: ${r.error}`); loadState(); return; }
   alert(`Masuk: ${r.external_id} · ${r.distance_km} km · best5K ${r.best_5k_s || "-"}s`);
   loadState();
 };

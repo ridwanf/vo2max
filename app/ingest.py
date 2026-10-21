@@ -36,22 +36,30 @@ def ingest_file(path: str, external_id: str | None = None) -> dict:
     ext_id = external_id or Path(path).stem
     parsed = tcx.parse_any(path)
     if not parsed["dist"]:
-        return {"external_id": ext_id, "skipped": "tanpa trackpoint"}
+        return {"external_id": ext_id,
+                "error": "TCX tidak punya DistanceMeters maupun Position — "
+                         "export ulang dari Strava (⋯ → Export TCX)"}
 
     moving, avg_hr, max_hr = _summary(parsed["dist"], parsed["time"], parsed["hr"])
     source = "fit" if path.lower().endswith(".fit") else "tcx"
     best5k = metrics.best_5k(parsed["dist"], parsed["time"])
+    note = None
+    if best5k is None and parsed["dist"][-1] >= 4800:
+        # run hampir 5 km (jarak GPS sering 4,95-4,99 km): ekstrapolasi Riegel
+        best5k = metrics.riegel(moving, parsed["dist"][-1])
+        note = "estimate"
 
     con = connect()
     con.execute(
         """INSERT INTO activities (external_id, source, start_utc, distance_m, moving_s,
-                                   avg_hr, max_hr, best_5k_s)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                                   avg_hr, max_hr, best_5k_s, note)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
            ON CONFLICT(external_id) DO UPDATE SET
              start_utc=excluded.start_utc, distance_m=excluded.distance_m,
              moving_s=excluded.moving_s, avg_hr=excluded.avg_hr,
-             max_hr=excluded.max_hr, best_5k_s=excluded.best_5k_s""",
-        (ext_id, source, parsed["start"], parsed["dist"][-1], moving, avg_hr, max_hr, best5k),
+             max_hr=excluded.max_hr, best_5k_s=excluded.best_5k_s,
+             note=excluded.note""",
+        (ext_id, source, parsed["start"], parsed["dist"][-1], moving, avg_hr, max_hr, best5k, note),
     )
     con.execute(
         """INSERT INTO streams_cache (external_id, hr_json, time_json, dist_json, fetched_utc)
