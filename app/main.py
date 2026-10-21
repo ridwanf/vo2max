@@ -110,5 +110,5 @@ def export_all(_:bool = Depends(require_login)):
 	con.close()
 	return out
 
-app.mount("/", StaticFiles(directory=os.path.join(os.path.dirname(__file__),  "../data"),
+app.mount("/", StaticFiles(directory=os.path.join(os.path.dirname(__file__), "..", "static"),
                            html=True), name="static")
