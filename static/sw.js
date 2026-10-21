@@ -1,5 +1,5 @@
 // static/sw.js — cache shell biar sesi terakhir tetap kebuka offline
-const SHELL = "vo2max-v2";
+const SHELL = "vo2max-v3";
 const ASSETS = ["/", "/app.js", "/manifest.webmanifest"];
 
 self.addEventListener("install", (e) => {
@@ -25,11 +25,12 @@ self.addEventListener("fetch", (e) => {
     return;
   }
 
+  // network-first: update langsung kepakai, cache cuma cadangan offline
   e.respondWith(
-    caches.match(e.request).then((hit) => hit || fetch(e.request).then((res) => {
+    fetch(e.request).then((res) => {
       const copy = res.clone();
       caches.open(SHELL).then((c) => c.put(e.request, copy));
       return res;
-    }))
+    }).catch(() => caches.match(e.request).then((hit) => hit || caches.match("/")))
   );
 });

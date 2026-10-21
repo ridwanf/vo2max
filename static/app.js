@@ -52,23 +52,51 @@ $("btnLogin").onclick = async () => {
   loadState();
 };
 
+function setStatus(msg, kind) {
+  const el = $("uploadStatus");
+  if (!el) return;
+  el.textContent = msg || "";
+  el.style.color = kind === "err" ? "#ff5d5d" : kind === "ok" ? "#31d0aa" : "#8d9dae";
+}
+
 $("file").onchange = async (e) => {
   const f = e.target.files[0];
   if (!f) return;
-  const fd = new FormData();
-  fd.append("file", f);
-  const r = await api("/api/upload", { method: "POST", body: fd });
-  if (r.error) { alert(`Gagal: ${r.error}`); loadState(); return; }
-  alert(`Masuk: ${r.external_id} · ${r.distance_km} km · best5K ${r.best_5k_s || "-"}s`);
-  loadState();
+  const input = e.target;
+  input.disabled = true;
+  setStatus(`Mengunggah ${f.name} (${(f.size / 1024).toFixed(0)} KB)…`);
+  try {
+    const fd = new FormData();
+    fd.append("file", f);
+    const r = await api("/api/upload", { method: "POST", body: fd });
+    if (r.error) {
+      setStatus(`Gagal: ${r.error}`, "err");
+    } else {
+      setStatus(`Masuk: ${r.external_id} · ${r.distance_km} km · best5K ${r.best_5k_s || "-"}s`, "ok");
+      await loadState();
+    }
+  } catch (err) {
+    setStatus(`Gagal upload: ${err.message}`, "err");
+  } finally {
+    input.disabled = false;
+    input.value = "";
+  }
 };
 
 $("btnImport").onclick = async () => {
   $("btnImport").textContent = "Mengimport…";
-  const r = await api("/api/import", { method: "POST" });
-  $("btnImport").textContent = "Import folder di server";
-  alert(`${r.results.length} file diproses`);
-  loadState();
+  try {
+    const r = await api("/api/import", { method: "POST" });
+    const ok = r.results.filter((x) => !x.error).length;
+    const err = r.results.length - ok;
+    setStatus(`${ok} file masuk${err ? `, ${err} gagal: ${r.results.find((x) => x.error)?.error || ""}` : ""}`,
+              err ? "err" : "ok");
+    await loadState();
+  } catch (e) {
+    setStatus(`Gagal import: ${e.message}`, "err");
+  } finally {
+    $("btnImport").textContent = "Import folder di server";
+  }
 };
 
 $("btnManual").onclick = async () => {
