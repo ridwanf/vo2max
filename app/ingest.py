@@ -35,6 +35,13 @@ def _summary(dist, tm, hr):
 def ingest_file(path: str, external_id: str | None = None) -> dict:
     ext_id = external_id or Path(path).stem
     parsed = tcx.parse_any(path)
+    sport = parsed.get("sport")
+    creator = parsed.get("creator")
+    if sport and sport not in ("running", "run"):
+        return {"external_id": ext_id,
+                "error": f"ini aktivitas '{sport}'"
+                         + (f" dari {creator}" if creator else "")
+                         + " — app cuma menghitung run"}
     if not parsed["dist"]:
         return {"external_id": ext_id,
                 "error": "TCX tanpa jarak: DistanceMeters 0, tanpa GPS, tanpa Speed. "
