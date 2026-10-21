@@ -37,8 +37,9 @@ def ingest_file(path: str, external_id: str | None = None) -> dict:
     parsed = tcx.parse_any(path)
     if not parsed["dist"]:
         return {"external_id": ext_id,
-                "error": "TCX tidak punya DistanceMeters maupun Position — "
-                         "export ulang dari Strava (⋯ → Export TCX)"}
+                "error": "TCX tanpa jarak: DistanceMeters 0, tanpa GPS, tanpa Speed. "
+                         "Aktivitas ini kosong di Strava — pakai Export TCX dari run yang "
+                         "ada peta/pace-nya, atau input manual (km + waktu + avg HR)"}
 
     moving, avg_hr, max_hr = _summary(parsed["dist"], parsed["time"], parsed["hr"])
     source = "fit" if path.lower().endswith(".fit") else "tcx"

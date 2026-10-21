@@ -86,6 +86,14 @@ def parse_tcx(path: str) -> dict:
         d = _text(tp, "DistanceMeters")
         if d is None:
             continue
+        speed = None
+        for el in tp.iter():
+            if _tag(el) == "Speed" and el.text:
+                try:
+                    speed = float(el.text)
+                except ValueError:
+                    speed = None
+                break
         bpm = None
         hr_el = _child(tp, "HeartRateBpm")
         if hr_el is not None:
