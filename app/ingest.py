@@ -15,7 +15,13 @@ from datetime import datetime
 from pathlib import Path
 
 from . import metrics, tcx
-from .db import connect
+from .db import PROJECT_ROOT, connect
+
+
+def resolve_inbox(raw: str) -> Path:
+    """Path relatif dihitung dari root project, bukan dari CWD."""
+    p = Path(os.path.expanduser(raw))
+    return (PROJECT_ROOT / p).resolve() if not p.is_absolute() else p.resolve()
 
 
 def _summary(dist, tm, hr):
@@ -26,8 +32,8 @@ def _summary(dist, tm, hr):
     return moving, avg, mx
 
 
-def ingest_file(path: str) -> dict:
-    ext_id = Path(path).stem
+def ingest_file(path: str, external_id: str | None = None) -> dict:
+    ext_id = external_id or Path(path).stem
     parsed = tcx.parse_any(path)
     if not parsed["dist"]:
         return {"external_id": ext_id, "skipped": "tanpa trackpoint"}
@@ -67,12 +73,17 @@ def ingest_file(path: str) -> dict:
 
 
 def scan(inbox: str) -> list[dict]:
-    root = Path(inbox).expanduser()
+    root = resolve_inbox(inbox)
+    if not root.exists():
+        root.mkdir(parents=True, exist_ok=True)
+        return [{"info": f"folder dibuat, masih kosong: {root}"}]
     if not root.is_dir():
-        return [{"error": f"folder tidak ada: {root}"}]
+        return [{"error": f"bukan folder: {root}"}]
     out = []
     for f in sorted(root.rglob("*")):
-        if f.suffix.lower() not in (".tcx", ".fit"):
+        if not f.is_file() or f.name.startswith("."):
+            continue
+        if f.suffix.lower() not in (".tcx", ".fit", ".gz", ".zip"):
             continue
         try:
             out.append(ingest_file(str(f)))
@@ -84,9 +95,9 @@ def scan(inbox: str) -> list[dict]:
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()
     ap.add_argument("--file")
-    ap.add_argument("--inbox", default=os.environ.get("TCX_INBOX", "~/strava-export"))
+    ap.add_argument("--inbox", default=os.environ.get("TCX_INBOX", "data"))
     args = ap.parse_args()
     results = [ingest_file(args.file)] if args.file else scan(args.inbox)
     for r in results:
         print(r)
-    print(f"total: {len(results)}")
+    print(f"total: {len(results)} · folder: {resolve_inbox(args.inbox)}")
