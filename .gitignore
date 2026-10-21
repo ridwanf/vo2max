@@ -1,3 +1,5 @@
 /.env
 /db/vo2max.db
 /.venv/
+/data
+/.idea
